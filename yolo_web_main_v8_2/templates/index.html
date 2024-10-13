@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>目标检测系统</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      transition: background-color 0.3s;
+    }
+    #title {
+      text-align: center;
+      color: #333;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-around;
+      animation: floatUp 1s ease-in-out;
+    }
+    @keyframes floatUp {
+      0% {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    .image-container {
+      width: 45%;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      position: relative;
+      overflow: hidden;
+    }
+    img {
+      width: 100%;
+      height: auto;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      transition: transform 0.3s;
+    }
+    img:hover {
+      transform: scale(1.05);
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: skyblue;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      outline: none;
+    }
+    button:hover {
+      background-color: #007bff;
+    }
+    input[type="file"] {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-top: 10px;
+      outline: none;
+    }
+    select {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      outline: none;
+      cursor: pointer;
+    }
+    select:hover {
+      border-color: #007bff;
+    }
+    #result_show {
+      display: none;
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-top: 20px;
+      animation: appear 1s ease-in-out;
+    }
+    @keyframes appear {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+    .download-button {
+      display: none;
+      margin-top: 20px;
+    }
+    .download-button a {
+      color: white;
+      text-decoration: none;
+    }
+    .download-button a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="title"><i class="fas fa-eye"></i> AI智齿卫目标检测系统</h2>
+  <div class="container">
+    <div class="image-container">
+      <h3>原始图片</h3>
+      <img id="imageDisplay" src="" alt="Uploaded image will be displayed here."/>
+      <input type="file" id="imageFile" name="file" onchange="displayImage()">
+      <select id="modelSelect" onchange="updateModel(this.value)">
+        <option value="./best1.pt">best1</option>
+        <option value="./best2.pt">best2</option>
+      </select>
+    </div>
+    <div class="image-container">
+      <h3>检测后的图片</h3>
+      <img id="result_show" src="" alt="Detection result will be displayed here."/>
+      <button class="download-button" id="downloadButton" onclick="downloadImage()"><i class="fas fa-download"></i> 下载图片</button>
+    </div>
+  </div>
+  <button type="button" id="button_detect"><i class="fas fa-play"></i> 开始检测</button>
+  <script>
+    function displayImage() {
+      var fileInput = document.getElementById("imageFile");
+      var imageDisplay = document.getElementById("imageDisplay");
+      var file = fileInput.files[0];
+      var reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function (e) {
+        imageDisplay.src = e.target.result;
+      };
+    }
+  
+    function updateModel(modelPath) {
+      console.log('Selected model:', modelPath);
+    }
+  
+    document.getElementById("button_detect").onclick = function() {
+      var formData = new FormData();
+      formData.append("file", document.getElementById("imageFile").files[0]);
+      var model = document.getElementById("modelSelect").value;
+      formData.append("model", model);
+      $.ajax({
+        url: '/detect',
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function(response) {
+          if (response.detected_image) {
+            document.getElementById("result_show").style.display = 'block';
+            document.getElementById("result_show").src = response.detected_image;
+            document.getElementById("downloadButton").style.display = 'block';
+          } else {
+            console.log(response);
+          }
+        },
+        error: function(error) {
+          console.log(error);
+        }
+      });
+    };
+  
+    function downloadImage() {
+      var imageSrc = document.getElementById("result_show").src;
+      var link = document.createElement('a');
+      link.href = imageSrc;
+      link.download = 'detected_image.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
